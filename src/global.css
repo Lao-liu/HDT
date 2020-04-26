@@ -1,0 +1,19 @@
+@import '~antd/dist/antd.css';
+@import '~codemirror/lib/codemirror.css';
+@import '~codemirror/theme/material.css';
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+:global(.react-codemirror2, .CodeMirror.cm-s-material) {
+  height: 450px;
+}
+
+:global(.CodeMirror) {
+  height: 450px;
+}
