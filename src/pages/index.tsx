@@ -1,19 +1,7 @@
 import React, { useState } from 'react';
 import { UnControlled as CodeMirror } from 'react-codemirror2';
-require('codemirror/mode/javascript/javascript');
-require('codemirror/addon/hint/show-hint');
-require('codemirror/addon/hint/javascript-hint');
-
-import {
-  Row,
-  Col,
-  Input,
-  Divider,
-  Button,
-  Tree,
-  notification,
-  Card,
-} from 'antd';
+import { Button, Card, Col, Divider, Input, notification, Row, Select, Tree } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import { TreeNodeNormal } from 'antd/lib/tree/Tree';
 import { Client } from '@hprose/rpc-core';
 import { Formatter } from '@hprose/io';
@@ -22,33 +10,45 @@ import request from 'umi-request';
 
 import './index.css';
 
+require('codemirror/mode/javascript/javascript');
+require('codemirror/addon/hint/show-hint');
+require('codemirror/addon/hint/javascript-hint');
+
+interface InvokeHistory {
+  uri: string;
+  methods: any;
+  current: string;
+  params: any;
+  response: string;
+}
+
 export default function() {
-  const [uri, setUri] = useState<string>(localStorage.getItem("uri") || 'http://sstk.test/api');
-  const [funcs, setFuncs] = useState<Array<TreeNodeNormal>>([
+  const [ uri, setUri ] = useState<string>(localStorage.getItem('uri') || 'http://sstk.test/api');
+  const [ functions, setFunctions ] = useState<Array<TreeNodeNormal>>([
     {
       key: '0',
       title: '等待获取中...',
     },
   ]);
-  const [funcLoading, setFuncLoading] = useState<boolean>(false);
-  const [paramsInput, setParamsInput] = useState<any>(localStorage.getItem("params") ?? `// JSON 格式 请求参数
+  const [ funcLoading, setFuncLoading ] = useState<boolean>(false);
+  const [ paramsInput, setParamsInput ] = useState<any>(localStorage.getItem('params') ?? `// JSON 格式 请求参数
 {} | []`);
-  const [params, setParams] = useState<any>();
-  const [currentFunction, setCurrentFunction] = useState<string>('');
-  const [invokeResponse, setInvokeResponse] = useState<string>('// 响应结果输出...');
-  const [invokeResultMode, setInvokeResultMode] = useState<string>('Normal');
-  const [invokeResultTimeout, setInvokeResultTimeout] = useState<number>(300000);
-  const [invokeResponseLoading, setInvokeResponseLoading] = useState<boolean>(false);
+  const [ params, setParams ] = useState<any>();
+  const [ currentFunction, setCurrentFunction ] = useState<string>('');
+  const [ invokeResponse, setInvokeResponse ] = useState<string>('// 响应结果输出...');
+  const [ invokeResultMode, setInvokeResultMode ] = useState<string>('Normal');
+  const [ invokeResultTimeout, setInvokeResultTimeout ] = useState<number>(300000);
+  const [ invokeResponseLoading, setInvokeResponseLoading ] = useState<boolean>(false);
 
   const handleConnectHprose = (e: any) => {
-    if(localStorage.getItem("params") === `// JSON 格式 请求参数
-{} | []`){
+    if (localStorage.getItem('params') === `// JSON 格式 请求参数
+{} | []`) {
       setParamsInput(`{
   "":""
 }`);
-} else {
-  setParams(localStorage.getItem("params"));
-}
+    } else {
+      setParams(localStorage.getItem('params'));
+    }
 
     request
       .post(uri, {
@@ -76,12 +76,12 @@ export default function() {
           title: f === '*' ? '迷失方法 [ * ]' : f,
         });
       });
-      setFuncs(renderFunctions);
+      setFunctions(renderFunctions);
     }
   };
 
   const getClient = (): Client => {
-    localStorage.setItem("uri", uri);
+    localStorage.setItem('uri', uri);
     let Settings = {
       timeout: invokeResultTimeout,
     };
@@ -92,15 +92,22 @@ export default function() {
 
   const handleInvoke = () => {
     try {
-      localStorage.setItem("params", params);
+      localStorage.setItem('params', params);
       setInvokeResponse('载入中...');
       setInvokeResponseLoading(true);
       getClient()
-        .invoke(currentFunction, [JSON.parse(params)])
+        .invoke(currentFunction, [ JSON.parse(params) ])
         .then(response => {
           if (response) {
             setInvokeResponseLoading(false);
             setInvokeResponse(JSON.stringify(response, null, 2));
+            handleSetHistory({
+              uri,
+              methods: functions,
+              current: currentFunction,
+              params,
+              response,
+            });
           }
         })
         .catch(e => {
@@ -108,6 +115,7 @@ export default function() {
             message: '错误提示',
             description: e.toString(),
           });
+          setInvokeResponse(e.toString());
           setInvokeResponseLoading(false);
         });
     } catch (e) {
@@ -127,14 +135,75 @@ export default function() {
     setInvokeResultMode(e.target.value);
   };
 
+  const handleSetHistory = (history: InvokeHistory) => {
+    const historyList: {[key: string]: InvokeHistory[]} = handleGetHistory();
+
+    if (historyList[history.uri] === undefined) {
+      historyList[history.uri] = [];
+    }
+    if (historyList[history.uri].length >= 20) {
+      historyList[history.uri].shift();
+    }
+
+    let itemKey = 0;
+    let exist = historyList[history.uri].some((h, i) => {
+      if (h.current === history.current) {
+        itemKey = i;
+        return true
+      }
+      return false;
+    });
+
+    if (exist) {
+      historyList[history.uri][itemKey] = history;
+    } else {
+      historyList[history.uri].push(history);
+    }
+
+    localStorage.setItem('history', JSON.stringify(historyList));
+  };
+
+  const handleGetHistory = () => {
+    const historyList = localStorage.getItem('history');
+    if (historyList) {
+      return JSON.parse(historyList);
+    }
+
+    return {};
+  };
+
+  const handleCleanHistory = () => {
+    localStorage.removeItem('history');
+    notification.success({
+      message: "消息提示",
+      description: "历史记录已清空...",
+    });
+  };
+
+  const handleReviewHistory = (v: string) => {
+    const h: InvokeHistory = JSON.parse(v);
+    setFunctions(h.methods);
+    setUri(h.uri);
+    setCurrentFunction(h.current);
+    setParamsInput(h.params);
+    setInvokeResponse(JSON.stringify(h.response, null, 2));
+    notification.success({
+      message: '操作提示',
+      description: '历史记录已载入...',
+    });
+  };
+
   return (
     <div style={{ minHeight: 723 }}>
-      <Row gutter={{ xs: 8, sm: 16, md: 24 }}>
+      <Row gutter={{
+        xs: 8, sm: 16, md: 24,
+      }}>
         <Col span={21}>
           <Input.Search
             size="large"
             placeholder="请输入Hprose服务接口地址..."
-            defaultValue={localStorage.getItem("uri") || "http://"}
+            defaultValue={uri}
+            value={uri}
             onChange={handleUriChange}
             onPressEnter={handleConnectHprose}
           />
@@ -145,11 +214,15 @@ export default function() {
           </Button>
         </Col>
       </Row>
-      <Row gutter={{ xs: 8, sm: 16, md: 24 }} style={{ marginTop: 20 }}>
+      <Row gutter={{
+        xs: 8, sm: 16, md: 24,
+      }} style={{ marginTop: 20 }}>
         <Col span={6}>
           <Card
             title={`方法 (${currentFunction || '空'})`}
-            style={{ height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20 }}
+            style={{
+              height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
+            }}
           >
             <Tree
               showLine
@@ -159,7 +232,7 @@ export default function() {
                 overflow: 'scroll',
                 fontSize: 15,
               }}
-              treeData={funcs}
+              treeData={functions}
               onSelect={(selectedKeys, info) => {
                 setCurrentFunction(selectedKeys[0]);
               }}
@@ -169,7 +242,9 @@ export default function() {
         <Col span={6}>
           <Card
             title="请求"
-            style={{ height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20 }}
+            style={{
+              height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
+            }}
           >
             <CodeMirror
               value={paramsInput}
@@ -194,7 +269,9 @@ export default function() {
         <Col span={12}>
           <Card
             title="响应"
-            style={{ height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20 }}
+            style={{
+              height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
+            }}
             loading={invokeResponseLoading}
           >
             <CodeMirror
@@ -206,6 +283,19 @@ export default function() {
               }}
             />
             <Divider />
+            <Select
+              placeholder='接口请求历史'
+              style={{ width: '60%' }}
+              disabled={handleGetHistory().length === 0}
+              onSelect={handleReviewHistory}
+            >
+              {Object.keys(handleGetHistory()).map((huri, index) => <Select.OptGroup key={huri}>
+                {handleGetHistory()[huri].map((h: InvokeHistory, i: number) =>
+                  <Select.Option key={`${index}-${i}`} value={JSON.stringify(h)} >{`调用: ${h.current} () 方法...`}</Select.Option>)}
+              </Select.OptGroup>)}
+            </Select>
+            <Divider type='vertical' />
+            <Button icon={<DeleteOutlined />} danger onClick={() => handleCleanHistory()} >清空历史</Button>
           </Card>
         </Col>
       </Row>
