@@ -239,7 +239,7 @@ export default function() {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={9}>
           <Card
             title="请求"
             style={{
@@ -266,7 +266,7 @@ export default function() {
             </Button>
           </Card>
         </Col>
-        <Col span={12}>
+        <Col span={9}>
           <Card
             title="响应"
             style={{
