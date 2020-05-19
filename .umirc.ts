@@ -20,7 +20,7 @@ const config: IConfig =  {
       dynamicImport: false,
       title: 'HproseTest',
       dll: true,
-      
+
       routes: {
         exclude: [
           /models\//,
