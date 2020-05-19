@@ -255,7 +255,7 @@ export default function() {
               }}
               treeData={functions}
               onSelect={(selectedKeys, info) => {
-                setCurrentFunction(selectedKeys[0]);
+                setCurrentFunction(String(selectedKeys[0]));
               }}
             />
           </Card>
