@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UnControlled as CodeMirror } from 'react-codemirror2';
 import { Button, Card, Col, Divider, Input, notification, Row, Select, Tree } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ImportOutlined } from '@ant-design/icons';
 import { TreeNodeNormal } from 'antd/lib/tree/Tree';
 import { Client } from '@hprose/rpc-core';
 import { Formatter } from '@hprose/io';
@@ -10,6 +10,8 @@ import request from 'umi-request';
 
 import './index.css';
 import ButtonGroup from 'antd/es/button/button-group';
+import { ShareAltOutlined } from '@ant-design/icons/lib';
+import copy from 'copy-to-clipboard';
 
 require('codemirror/mode/javascript/javascript');
 require('codemirror/addon/hint/show-hint');
@@ -214,6 +216,50 @@ export default function() {
     }
   };
 
+  const handleImport = () => {
+    try {
+      const data = JSON.parse(params);
+      if (data) {
+        setUri(data.uri);
+        setFunctions(data.functions);
+        setCurrentFunction(data.currentFunction);
+        setParams(JSON.stringify(data.params));
+        setParamsInput(JSON.stringify(data.params, null, 2));
+
+        notification.success({
+          message: "操作提示",
+          description: "接口调用数据已导入...",
+        });
+      } else {
+        notification.warning({
+          message: "操作提示",
+          description: "请将接口数据复制到请求参数框...",
+        });
+      }
+    } catch (e) {
+      notification.error({
+        message: "操作提示",
+        description: e.toString(),
+      });
+    }
+  };
+
+  const handleShare = () => {
+    const data = {
+      uri,
+      functions,
+      currentFunction,
+      params: JSON.parse(params)
+    };
+
+    if (copy(JSON.stringify(data))) {
+      notification.success({
+        message: '操作提示',
+        description: "接口调用数据已复制到剪粘板，你可以分享给其他用户...",
+      });
+    }
+  };
+
   return (
     <div style={{ minHeight: 723 }}>
       <Row gutter={{
@@ -289,6 +335,11 @@ export default function() {
             <ButtonGroup>
               <Button type='primary' size='small' onClick={() => handleSerialize()}>序列化内容</Button>
               <Button type='primary' size='small' onClick={() => handleDeSerialize()}>反序列化内容</Button>
+            </ButtonGroup>
+            <Divider type='vertical' />
+            <ButtonGroup>
+              <Button type='primary' size='small' icon={<ImportOutlined />} onClick={() => handleImport()}>导入</Button>
+              <Button type='primary' size='small' icon={<ShareAltOutlined />} onClick={() => handleShare()}>分享</Button>
             </ButtonGroup>
           </Card>
         </Col>
