@@ -10,7 +10,7 @@ import request from 'umi-request';
 
 import './index.css';
 import ButtonGroup from 'antd/es/button/button-group';
-import { ShareAltOutlined } from '@ant-design/icons/lib';
+import { FormatPainterOutlined, ShareAltOutlined } from '@ant-design/icons/lib';
 import copy from 'copy-to-clipboard';
 
 require('codemirror/mode/javascript/javascript');
@@ -227,18 +227,18 @@ export default function() {
         setParamsInput(JSON.stringify(data.params, null, 2));
 
         notification.success({
-          message: "操作提示",
-          description: "接口调用数据已导入...",
+          message: '操作提示',
+          description: '接口调用数据已导入...',
         });
       } else {
         notification.warning({
-          message: "操作提示",
-          description: "请将接口数据复制到请求参数框...",
+          message: '操作提示',
+          description: '请将接口数据复制到请求参数框...',
         });
       }
     } catch (e) {
       notification.error({
-        message: "操作提示",
+        message: '操作提示',
         description: e.toString(),
       });
     }
@@ -249,13 +249,33 @@ export default function() {
       uri,
       functions,
       currentFunction,
-      params: JSON.parse(params)
+      params: JSON.parse(params),
     };
 
     if (copy(JSON.stringify(data))) {
       notification.success({
         message: '操作提示',
-        description: "接口调用数据已复制到剪粘板，你可以分享给其他用户...",
+        description: '接口调用数据已复制到剪粘板，你可以分享给其他用户...',
+      });
+    }
+  };
+
+  const handleFormatCode = () => {
+    try {
+      const newRequestParams = JSON.parse(paramsInput);
+      if (typeof newRequestParams === "boolean") {
+        notification.warn({
+          message: "操作提示",
+          description: "请确认输入的为正确的JSON格式代码..."
+        });
+      } else {
+        const newInput = JSON.stringify(newRequestParams, null, 2);
+        setParamsInput(newInput);
+      }
+    } catch (e) {
+      notification.warn({
+        message: "操作提示",
+        description: e.toString()
       });
     }
   };
@@ -312,6 +332,9 @@ export default function() {
             style={{
               height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
             }}
+            extra={<div>
+              <Button icon={<FormatPainterOutlined />} onClick={() => handleFormatCode()} type='link' title='格式化代码' />
+            </div>}
           >
             <CodeMirror
               value={paramsInput}
