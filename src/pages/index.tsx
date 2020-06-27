@@ -25,6 +25,8 @@ interface InvokeHistory {
   response: string;
 }
 
+const jsBeautify = require('js-beautify').js;
+
 export default function() {
   const [ uri, setUri ] = useState<string>(localStorage.getItem('uri') || 'http://sstk.test/api');
   const [ functions, setFunctions ] = useState<Array<TreeNodeNormal>>([
@@ -33,14 +35,14 @@ export default function() {
       title: '等待获取中...',
     },
   ]);
-  const [ funcLoading, setFuncLoading ] = useState<boolean>(false);
+  // const [ funcLoading, setFuncLoading ] = useState<boolean>(false);
   const [ paramsInput, setParamsInput ] = useState<any>(localStorage.getItem('params') ?? `// JSON 格式 请求参数
 {} | []`);
   const [ params, setParams ] = useState<any>();
   const [ currentFunction, setCurrentFunction ] = useState<string>('');
   const [ invokeResponse, setInvokeResponse ] = useState<string>('// 响应结果输出...');
   const [ invokeResultMode, setInvokeResultMode ] = useState<string>('Normal');
-  const [ invokeResultTimeout, setInvokeResultTimeout ] = useState<number>(300000);
+  // const [ invokeResultTimeout, setInvokeResultTimeout ] = useState<number>(300000);
   const [ invokeResponseLoading, setInvokeResponseLoading ] = useState<boolean>(false);
 
   const handleConnectHprose = (e: any) => {
@@ -85,9 +87,9 @@ export default function() {
 
   const getClient = (): Client => {
     localStorage.setItem('uri', uri);
-    let Settings = {
-      timeout: invokeResultTimeout,
-    };
+    // let Settings = {
+    //   timeout: invokeResultTimeout,
+    // };
     const client = new Client(uri);
     client.useService<any>();
     return client;
@@ -96,10 +98,13 @@ export default function() {
   const handleInvoke = () => {
     try {
       localStorage.setItem('params', params);
+      setParamsInput(jsBeautify(params, {indent_size: 2}));
       setInvokeResponse('载入中...');
       setInvokeResponseLoading(true);
+      const input = JSON.parse(params);
+      const invokeArgs = Array.isArray(input) ? input : [input];
       getClient()
-        .invoke(currentFunction, [ JSON.parse(params) ])
+        .invoke(currentFunction, invokeArgs)
         .then(response => {
           if (response) {
             setInvokeResponseLoading(false);
@@ -134,9 +139,9 @@ export default function() {
     setUri(e.target.value);
   };
 
-  const handleResponseModeChange = (e: any) => {
-    setInvokeResultMode(e.target.value);
-  };
+  // const handleResponseModeChange = (e: any) => {
+  //   setInvokeResultMode(e.target.value);
+  // };
 
   const handleSetHistory = (history: InvokeHistory) => {
     const historyList: { [key: string]: InvokeHistory[] } = handleGetHistory();
@@ -262,16 +267,8 @@ export default function() {
 
   const handleFormatCode = () => {
     try {
-      const newRequestParams = JSON.parse(paramsInput);
-      if (typeof newRequestParams === "boolean") {
-        notification.warn({
-          message: "操作提示",
-          description: "请确认输入的为正确的JSON格式代码..."
-        });
-      } else {
-        const newInput = JSON.stringify(newRequestParams, null, 2);
-        setParamsInput(newInput);
-      }
+      const formatCode = jsBeautify(paramsInput, {indent_size: 2});
+      setParamsInput(formatCode);
     } catch (e) {
       notification.warn({
         message: "操作提示",
