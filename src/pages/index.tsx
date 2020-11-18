@@ -223,7 +223,7 @@ export default function() {
 
   const handleImport = () => {
     try {
-      const data = JSON.parse(params);
+      const data = Formatter.deserialize(params);
       if (data) {
         setUri(data.uri);
         setFunctions(data.functions);
@@ -257,7 +257,9 @@ export default function() {
       params: JSON.parse(params),
     };
 
-    if (copy(JSON.stringify(data))) {
+    if (copy(new TextDecoder('utf-8').decode(
+      Formatter.serialize(data, false),
+    ))) {
       notification.success({
         message: '操作提示',
         description: '接口调用数据已复制到剪粘板，你可以分享给其他用户...',
