@@ -307,7 +307,7 @@ export default function() {
           <Card
             title={`方法 (${currentFunction || '空'})`}
             style={{
-              height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
+              height: '100%', minHeight: 725, maxHeight: 725, paddingBottom: 20,
             }}
           >
             <Tree
@@ -329,7 +329,7 @@ export default function() {
           <Card
             title="请求"
             style={{
-              height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
+              height: '100%', minHeight: 725, maxHeight: 725, paddingBottom: 20,
             }}
             extra={<div>
               <Button icon={<FormatPainterOutlined />} onClick={() => handleFormatCode()} type='link' title='格式化代码' />
@@ -369,7 +369,7 @@ export default function() {
           <Card
             title="响应"
             style={{
-              height: '100%', minHeight: 650, maxHeight: 650, paddingBottom: 20,
+              height: '100%', minHeight: 725, maxHeight: 725, paddingBottom: 20,
             }}
             loading={invokeResponseLoading}
           >
@@ -388,8 +388,8 @@ export default function() {
               disabled={handleGetHistory().length === 0}
               onSelect={handleReviewHistory}
             >
-              {Object.keys(handleGetHistory()).map((huri, index) => <Select.OptGroup key={huri}>
-                {handleGetHistory()[huri].map((h: InvokeHistory, i: number) =>
+              {Object.keys(handleGetHistory()).map((hUri, index) => <Select.OptGroup key={hUri}>
+                {handleGetHistory()[hUri].map((h: InvokeHistory, i: number) =>
                   <Select.Option key={`${index}-${i}`}
                                  value={JSON.stringify(h)}>{`调用: ${h.current} () 方法...`}</Select.Option>)}
               </Select.OptGroup>)}
